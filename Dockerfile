@@ -14,7 +14,7 @@ RUN bun install --frozen-lockfile
 # Copy the rest of the source
 COPY . .
 
-# Production build (TanStack Start / Vinxi -> .output)
+# Production build (TanStack Start + Cloudflare Vite plugin -> dist/)
 RUN bun run build
 
 # ============================================
@@ -26,15 +26,15 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy only the build artifacts we need
-COPY --from=builder /app/.output ./.output
+# Copy build artifacts (Cloudflare Vite plugin outputs to dist/)
+COPY --from=builder /app/dist ./dist
 
-# package.json not strictly required at runtime for this setup, but harmless
+# Copy the Node.js server wrapper
+COPY --from=builder /app/railway-server.mjs ./railway-server.mjs
+
+# Copy package.json for module resolution
 COPY --from=builder /app/package.json ./
 
 EXPOSE 3000
 
-# Shell form ensures Railway's PORT env is visible to the process.
-# We explicitly set PORT for the node process (Vinxi/Nitro reads process.env.PORT,
-# falling back to 3000). This matches Railway + TanStack Start recommendations.
-CMD ["sh", "-c", "PORT=${PORT:-3000} node .output/server/index.mjs"]
+CMD ["sh", "-c", "PORT=${PORT:-3000} node railway-server.mjs"]
