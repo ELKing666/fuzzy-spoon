@@ -32,8 +32,10 @@ COPY --from=builder /app/dist ./dist
 # Copy the Node.js server wrapper
 COPY --from=builder /app/railway-server.mjs ./railway-server.mjs
 
-# Copy package.json for module resolution
+# Copy package.json and node_modules for runtime dependency resolution
+# (Vite externalizes some packages like h3-v2 that must be available at runtime)
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 
